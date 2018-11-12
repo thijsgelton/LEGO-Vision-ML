@@ -1,0 +1,4 @@
+.idea/
+Classification/Final models/*
+Pretrained Models/*
+Localization/SVM/models/*
