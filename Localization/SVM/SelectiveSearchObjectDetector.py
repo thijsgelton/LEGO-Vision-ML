@@ -9,8 +9,8 @@ from sklearn import preprocessing
 from sklearn.externals import joblib
 
 from Helpers import helpers, utils
-from Helpers.utils import resize_and_pad, correct_bounding_boxes, w_h_to_x2_y2, display_bounding_boxes,\
-    x2_y2_to_w_h, apk
+from Helpers.utils import resize_and_pad, scale_bounding_boxes, w_h_to_x2_y2, display_bounding_boxes, \
+    x2_y2_to_w_h, calculate_intersection_over_union, ap, mean_ap
 
 only_numbers = re.compile(r"\d+\.\d+")
 
@@ -77,6 +77,17 @@ def preproccesing(image, shape):
     return preprocessed
 
 
+def get_actual_and_predicted_per_bbox(gt_bounding_boxes, gt_labels, pred_bounding_boxes, pred_labels):
+    actual = []
+    predicted = []
+    for gt_index, gt_box in enumerate(gt_bounding_boxes):
+        for pred_index, predicted_bbox in enumerate(pred_bounding_boxes):
+            if calculate_intersection_over_union(gt_box, predicted_bbox) > 0.4:
+                actual.append(gt_labels[gt_index])
+                predicted.append(pred_labels[pred_index])
+    return actual, predicted
+
+
 if __name__ == "__main__":
     image_path = r"D:\LEGO Vision Datasets\Detection\Natural Data_output\testImages\IMG_20181105_092359.jpg"
     bbox_path = r"D:\LEGO Vision Datasets\Detection\Natural Data_output\testImages\IMG_20181105_092359.bboxes.tsv"
@@ -87,7 +98,7 @@ if __name__ == "__main__":
                                                                          re.findall(only_numbers, line)))),
                                           open(bbox_path).readlines())))
     gt_bounding_boxes = np.array(
-        list(map(lambda box: correct_bounding_boxes(np.array(box), scale, scale, padding), gt_bounding_boxes)))
+        list(map(lambda box: scale_bounding_boxes(np.array(box), scale, scale, padding), gt_bounding_boxes)))
     gt_labels = list(map(lambda line: line.strip('\n'), open(labels_path).readlines()))
     classifier = joblib.load(r"D:\Projects\LEGO Vision\Classification\Final models\SVM\SVM-3200-256W.joblib")
     shape = (256, 256)
@@ -110,7 +121,8 @@ if __name__ == "__main__":
         labels.append(label_lookup[prediction['prediction'].argmax(axis=0)])
         scores.append(max(prediction['prediction']))
 
-    display_bounding_boxes(image,
-                           bounding_boxes=np.array(bboxes),
-                           labels=labels,
-                           scores=scores)
+    display_bounding_boxes(image, bounding_boxes=np.array(bboxes), labels=labels, scores=scores)
+    actual, predicted = get_actual_and_predicted_per_bbox(gt_bounding_boxes, gt_labels, bboxes, labels)
+    average_precision = ap(actual, predicted)
+    mean_average_precision = mean_ap([actual], [predicted])
+    print(average_precision, mean_average_precision)

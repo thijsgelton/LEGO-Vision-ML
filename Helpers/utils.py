@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import cv2
 import numpy as np
@@ -368,7 +369,7 @@ def x2_y2_to_w_h(box):
     return x1, y1, w, h
 
 
-def correct_bounding_boxes(box, scale_x=None, scale_y=None, padding=None):
+def scale_bounding_boxes(box, scale_x=None, scale_y=None, padding=None):
     assert isinstance(box, np.ndarray)
     if scale_x:
         box[np.array([0, 2])] = np.multiply(box[np.array([0, 2])], scale_x)
@@ -382,7 +383,7 @@ def correct_bounding_boxes(box, scale_x=None, scale_y=None, padding=None):
     return box
 
 
-def apk(actual, predicted, k=10):
+def ap(actual, predicted):
     """
     Computes the average precision at k.
     This function computes the average prescision at k between two lists of
@@ -400,9 +401,6 @@ def apk(actual, predicted, k=10):
     score : double
             The average precision at k over the input lists
     """
-    if len(predicted) > k:
-        predicted = predicted[:k]
-
     score = 0.0
     num_hits = 0.0
 
@@ -414,10 +412,10 @@ def apk(actual, predicted, k=10):
     if not actual:
         return 0.0
 
-    return score / min(len(actual), k)
+    return score / len(actual)
 
 
-def mapk(actual, predicted, k=10):
+def mean_ap(actual: List[List], predicted: List[List]):
     """
     Computes the mean average precision at k.
     This function computes the mean average prescision at k between two lists
@@ -437,4 +435,4 @@ def mapk(actual, predicted, k=10):
     score : double
             The mean average precision at k over the input lists
     """
-    return np.mean([apk(a, p, k) for a, p in zip(actual, predicted)])
+    return np.mean([ap(a, p) for a, p in zip(actual, predicted)])
