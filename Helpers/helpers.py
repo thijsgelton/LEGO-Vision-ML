@@ -30,13 +30,17 @@ def get_data(data_source, number_of_samples, shape, color_insensitive):
     return X, y
 
 
-def from_database(color_insensitive, data_dir, number_of_samples, shape):
+def from_database(color_insensitive, collection, number_of_samples, shape):
     X = []
     y = []
-    images = data_dir.find({'shape': shape, 'color_insensitive': bool(color_insensitive)})
+    number_of_samples_per_class = Counter()
+    images = collection.find({'shape': shape, 'color': not bool(color_insensitive)})
     for image in images:
+        if number_of_samples_per_class[image['label']] >= number_of_samples:
+            continue
         X.append(np.array(image['features']))
         y.append(image['label'])
+        number_of_samples_per_class.update({image['label']: 1})
     X = np.array(X)
     return X, y
 
@@ -198,8 +202,8 @@ def plot_confusion_matrix_with_acc_and_fbeta(y_true, y_pred, classes,
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
 
-    plt.figtext(0.2, -0.05, f'Accuracy: {accuracy:0.2f}', horizontalalignment='left', fontsize=12)
-    plt.figtext(0.2, -0.10, f'F-Score (beta = {fbeta_beta:0.1f}): {fbeta:0.2f}', horizontalalignment='left',
+    plt.figtext(0.2, -0.05, 'Accuracy: {:0.2f}'.format(accuracy), horizontalalignment='left', fontsize=12)
+    plt.figtext(0.2, -0.10, 'F-Score (beta = {:0.1f}): {:0.2f}'.format(fbeta_beta, fbeta), horizontalalignment='left',
                 fontsize=12)
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.

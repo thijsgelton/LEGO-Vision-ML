@@ -1,0 +1,212 @@
+[
+  {
+    "action": "data",
+    "src": [
+      "LEGO Vision/ds"
+    ],
+    "dst": "$input_data",
+    "settings": {
+      "classes_mapping": "default"
+    }
+  },
+  {
+    "action": "noise",
+    "src": [
+      "$input_data"
+    ],
+    "dst": "$noised",
+    "settings": {
+      "mean": 3,
+      "std": 3
+    }
+  },
+  {
+    "action": "blur",
+    "src": [
+      "$noised"
+    ],
+    "dst": "$data",
+    "settings": {
+      "name": "gaussian",
+      "sigma": {
+        "min": 0.1,
+        "max": 0.5
+      }
+    }
+  },
+  {
+    "action": "multiply",
+    "src": [
+      "$data"
+    ],
+    "dst": "$multiplied_for_cropping",
+    "settings": {
+      "multiply": 3
+    }
+  },
+  {
+    "action": "instances_crop",
+    "src": [
+      "$multiplied_for_cropping"
+    ],
+    "dst": "$cropped",
+    "settings": {
+      "classes": [
+        "2458-blue",
+        "3003-yellow",
+        "3020-red",
+        "3039-trans-clear"
+      ],
+      "pad": {
+        "sides": {
+          "top": "5%",
+          "left": "5%",
+          "right": "5%",
+          "bottom": "5%"
+        }
+      }
+    }
+  },
+  {
+    "action": "instances_crop",
+    "src": [
+      "$multiplied_for_cropping"
+    ],
+    "dst": "$cropped",
+    "settings": {
+      "classes": [
+        "3298-yellow",
+        "3710-red",
+        "6041-yellow"
+      ],
+      "pad": {
+        "sides": {
+          "top": "5%",
+          "left": "5%",
+          "right": "5%",
+          "bottom": "5%"
+        }
+      }
+    }
+  },
+  {
+    "action": "if",
+    "src": [
+      "$cropped"
+    ],
+    "dst": [
+      "$cropped_with_two_objects",
+      "null"
+    ],
+    "settings": {
+      "condition": {
+        "min_objects_count": 2
+      }
+    }
+  },
+  {
+    "action": "flip",
+    "src": [
+      "$data"
+    ],
+    "dst": "$data_flip_ve",
+    "settings": {
+      "axis": "vertical"
+    }
+  },
+  {
+    "action": "flip",
+    "src": [
+      "$data"
+    ],
+    "dst": "$data_flip_ho",
+    "settings": {
+      "axis": "horizontal"
+    }
+  },
+  {
+    "action": "flip",
+    "src": [
+      "$data_flip_ve"
+    ],
+    "dst": "$data_flip_ho_and_ve",
+    "settings": {
+      "axis": "horizontal"
+    }
+  },
+  {
+    "action": "bbox2poly",
+    "src": [
+      "$data"
+    ],
+    "dst": "$now_polygon",
+    "settings": {
+      "classes_mapping": {
+        "2458-blue": "2458-blue2",
+        "3003-yellow": "3003-yellow2",
+        "3020-red": "3020-red2",
+        "3039-trans-clear": "3039-trans-clear2",
+        "3298-yellow": "3298-yellow2",
+        "3710-red": "3710-red2",
+        "6041-yellow": "6041-yellow2"
+      }
+    }
+  },
+  {
+    "action": "multiply",
+    "src": [
+      "$now_polygon"
+    ],
+    "dst": "$multiplied_for_rotation",
+    "settings": {
+      "multiply": 3
+    }
+  },
+  {
+    "action": "rotate",
+    "src": [
+      "$multiplied_for_rotation"
+    ],
+    "dst": "$rotated_polygons",
+    "settings": {
+      "rotate_angles": {
+        "min_degrees": -45,
+        "max_degrees": 45
+      },
+      "black_regions": {
+        "mode": "crop"
+      }
+    }
+  },
+  {
+    "action": "bbox",
+    "src": [
+      "$rotated_polygons"
+    ],
+    "dst": "$data_rotated",
+    "settings": {
+      "classes_mapping": {
+        "2458-blue2": "2458-blue",
+        "3003-yellow2": "3003-yellow",
+        "3020-red2": "3020-red",
+        "3039-trans-clear2": "3039-trans-clear",
+        "3298-yellow2": "3298-yellow",
+        "3710-red2": "3710-red",
+        "6041-yellow2": "6041-yellow"
+      }
+    }
+  },
+  {
+    "action": "supervisely",
+    "src": [
+      "$data",
+      "$data_flip_ve",
+      "$data_flip_ho",
+      "$data_flip_ho_and_ve",
+      "$data_rotated",
+      "$cropped_with_two_objects"
+    ],
+    "dst": "result_project",
+    "settings": {}
+  }
+]

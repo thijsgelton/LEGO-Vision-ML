@@ -1,33 +1,39 @@
 import argparse
 import glob
-
 import os
-import numpy as np
-import cv2
 import time
-import matplotlib.pyplot as plt
-from skimage.color import rgb2gray
-from sklearn import preprocessing
-from skimage.feature import hog
-from Helpers import helpers
+
+import cv2
+import numpy as np
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
+from skimage.color import rgb2gray
+from skimage.feature import hog
+from sklearn import preprocessing
+
+from Helpers import helpers
 
 
 def export_hog_and_color_feature_to_database(image_directory, total_number_of_samples, dimensions, host, database,
-                                             collection):
+                                             collection, color_insensitive):
     client = MongoClient(host=host)
     image_collection = client.get_database(database).get_collection(collection)
     for dimension in [int(dimension.strip()) for dimension in dimensions.split(',')]:
-        for color_insensitive in [True, False]:
-            features_list, labels = images_to_hog_and_color_feature(image_directory, total_number_of_samples,
-                                                                    (dimension, dimension), color_insensitive)
-            image_collection.insert_many(documents=[
-                dict(_id=hash(features.tostring()),
-                     features=features.tolist(),
-                     label=label,
-                     shape=dimension,
-                     color=color_insensitive) for features, label in zip(features_list, labels)
-            ])
+        features_list, labels = images_to_hog_and_color_feature(image_directory, total_number_of_samples,
+                                                                (dimension, dimension), color_insensitive)
+        duplicates = 0
+        for features, label in zip(features_list, labels):
+            try:
+                image_collection.insert_one(document=dict(
+                    _id=hash(features.tostring()),
+                    features=features.tolist(),
+                    label=label,
+                    shape=dimension,
+                    color=not bool(color_insensitive))
+                )
+            except DuplicateKeyError:
+                duplicates += 1
+        print("Skipped {} duplicates".format(duplicates))
 
 
 def images_to_hog_and_color_feature(data_dir, number_of_samples, shape, color_insensitive):
@@ -87,7 +93,7 @@ def images_to_orb_feature(image_directory, number_of_samples=3200, shape=256):
             y.append(subdirectory)
             total_time += time.time() - start
             count += 1
-    print(f"Average time: {total_time / count}")
+    print("Average time: {}".format(total_time / count))
     X = np.array(X)
     y = np.array(y)
     return X, y
@@ -127,7 +133,7 @@ def images_to_hog_opencv_feature(image_directory, number_of_samples=3200, shape=
             y.append(subdirectory)
             total_time += time.time() - start
             count += 1
-    print(f"Average time: {total_time / count}")
+    print("Average time: {}".format(total_time / count))
     return np.array(X), np.array(y)
 
 
@@ -146,7 +152,7 @@ def export_hog_skimage_to_database(image_directory, total_number_of_samples, dim
                      shape=dimension,
                      feature_names='hog_skimage')
             )
-        image_collection.insert_many(documents)
+        image_collection.insert_many(documents, bypass_document_validation=True)
 
 
 def images_to_hog_skimage_feature(image_directory, number_of_samples=3200, shape=256):
@@ -167,7 +173,7 @@ def images_to_hog_skimage_feature(image_directory, number_of_samples=3200, shape
             y.append(subdirectory)
             total_time += time.time() - start
             count += 1
-    print(f"Average time: {total_time / count}")
+    print("Average time: {}".format(total_time / count))
     return np.array(X), np.array(y)
 
 
@@ -183,5 +189,12 @@ if __name__ == "__main__":
     parser.add_argument('--database_name', default="lego_vision")
     parser.add_argument('--collection_name', default="natural_data_hog")
     args = parser.parse_args()
-    export_hog_skimage_to_database(args.image_directory, args.total_number_of_samples, args.comma_separated_dimensions,
-                                   args.database_host, args.database_name, args.collection_name)
+    export_hog_and_color_feature_to_database(
+        image_directory=r"D:\LEGO Vision Datasets\Detection\SVM\Augmented Hard Negative Mining",
+        total_number_of_samples=1600,
+        dimensions="256",
+        host="localhost",
+        database="lego_vision",
+        collection="natural_hog_dom_negative_mining",
+        color_insensitive=False
+    )

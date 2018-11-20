@@ -27,7 +27,7 @@ import xml.dom.minidom
 # # get the Azure ML run object
 # run = Run.get_submitted_run()
 success = try_set_default_device(gpu(0))
-print(f"Using GPU: {success}")
+print("Using GPU: {}".format(success))
 
 
 def create_map_files_from_folders(data_dir, split=0.8, number_of_samples=800):
@@ -37,26 +37,23 @@ def create_map_files_from_folders(data_dir, split=0.8, number_of_samples=800):
             for file in [x for x in glob.glob(os.path.join(path, cls, '*')) if not x.endswith('txt')][
                         :number_of_samples]:
                 if file.endswith(('png', 'jpg', 'jpeg')):
-                    f.write(f"{os.path.abspath(file)}\t{classes.index(cls)}\n")
+                    f.write("{}\t{}\n".format(os.path.abspath(file), classes.index(cls)))
 
     with open(os.path.join(data_dir, 'images.txt')) as f:
         images = f.readlines()
         is_it_shuffled = set([image.split('\t')[-1] for image in images[:20]])
         if len(is_it_shuffled.difference()) < 2:  # if smaller than 2, it is not shuffled yet.
             random.shuffle(images)
-        # eval_images = [images.pop() for i in range(int(len(classes) * number_of_samples * 0.1))]
         train_images = images[:int(len(images) * split)]
         test_images = images[int(len(images) * split):]
         with open(os.path.join(data_dir, 'finalize_network.txt'), mode='w') as t:
-            t.writelines([f"{image}" for image in train_images])
+            t.writelines(["{}".format(image) for image in train_images])
         with open(os.path.join(data_dir, 'test.txt'), mode='w') as test:
-            test.writelines([f"{image}" for image in test_images])
-        # with open(os.path.join(data_dir, 'evaluate.txt'), mode='w') as e:
-        #     e.writelines([f"{image}" for image in eval_images])
+            test.writelines(["{}".format(image) for image in test_images])
 
 
 def create_reader(map_file, mean_file, train, dimensions, classes, total_number_of_samples):
-    print(f"Reading map file: {map_file} with number of samples {total_number_of_samples}")
+    print("Reading map file: {} with number of samples {}".format(map_file, total_number_of_samples))
 
     # transformation pipeline for the features has jitter/crop only when training
     transforms = []
@@ -174,10 +171,9 @@ def train(reader_train, reader_test, samples_per_epoch, max_amount_of_epochs, sa
     normalized_features = element_times(1.0 / 256.0, features)
     if with_tf:
         base_model = {
-            'model_file': os.path.join("..", "..", "Pretrained Models/AlexNet_ImageNet_Caffe.model"),
-            'feature_node_name': 'data',
-            'last_hidden_node_name': 'drop7',
-            # Channel Depth x Height x Width
+            'model_file': os.path.join("..", "..", "Pretrained Models/ResNet_18.model"),
+            'feature_node_name': 'features',
+            'last_hidden_node_name': 'z.x',
             'image_dims': (3, 224, 224)
         }
         model = create_tf_model(base_model, num_classes=len(classes), input_features=normalized_features, freeze=True)
@@ -226,7 +222,7 @@ def train(reader_train, reader_test, samples_per_epoch, max_amount_of_epochs, sa
 
 
 def evaluate_batch(network, reader_eval, samples_per_epoch_eval, classes, output_directory, number_of_samples, with_tf,
-                   samples_per_minibatch):
+                   samples_per_minibatch, data_dir, test_dir):
     features = network['features']
     label = network['label']
     model = network['model']
@@ -250,15 +246,17 @@ def evaluate_batch(network, reader_eval, samples_per_epoch_eval, classes, output
 
     tf = '-Resnet_18' if with_tf else ''
     helpers.plot_confusion_matrix_with_acc_and_fbeta(y_true, y_pred, classes,
-                                                     save_path=f'{output_directory}/cntk-{features.shape}'
-                                                               f'-{number_of_samples}{tf}.cm.png',
+                                                     save_path='{}/cntk-{}-{}{}.cm.png'.format(output_directory,
+                                                                                               features.shape,
+                                                                                               number_of_samples,
+                                                                                               tf),
                                                      normalize=True)
     accuracy = accuracy_score(y_true, y_pred)
     fscore = fbeta_score(y_true, y_pred, beta=0.5, average='macro')
     # run.log('f_score', np.float(fscore))
     # save model to outputs folder
 
-    with open(f'{args.output_dir}/results-{datetime.now().date()}.csv', 'a', newline='') as csvfile:
+    with open('{}/results-{}.csv'.format(args.output_dir, datetime.now().date()), 'a', newline='') as csvfile:
         results = {'data_dir': data_dir,
                    'test_dir': test_dir,
                    'number_of_samples': number_of_samples,
@@ -267,7 +265,7 @@ def evaluate_batch(network, reader_eval, samples_per_epoch_eval, classes, output
         writer = csv.DictWriter(csvfile, fieldnames=results.keys())
         writer.writerow(results)
 
-    model.save(f'{output_directory}/cntk-{features.shape}-{number_of_samples}{tf}.model')
+    model.save('{}/cntk-{}-{}{}.model'.format(output_directory, features.shape, number_of_samples, tf))
 
 
 def get_preprocessed_image(image):
@@ -299,7 +297,6 @@ def main(max_epochs, data_dir, test_dir, output_dir, lr, dimensions, number_of_s
     test_map_file = os.path.join(data_dir, 'test.txt')
 
     mean_file = create_mean_file(train_map_file, dimensions, 'mean_file.xml')
-    # eval_map_file = os.path.join(data_dir, 'evaluate.txt')
 
     if test_dir:
         create_map_files_from_folders(test_dir, split=0.7, number_of_samples=number_of_samples)
@@ -309,15 +306,15 @@ def main(max_epochs, data_dir, test_dir, output_dir, lr, dimensions, number_of_s
     samples_per_epoch_train = len(open(train_map_file).readlines())
     samples_per_epoch_test = len(open(test_map_file).readlines())
 
-    print(f"Classes: {classes}")
-    print(f"Max epochs: {max_epochs}")
-    print(f"Learning rate: {lr}")
+    print("Classes: {}".format(classes))
+    print("Max epochs: {}".format(max_epochs))
+    print("Learning rate: {}".format(lr))
+    print("Minibatch Size: {}".format(samples_per_minibatch))
+    print("Width and height of: {}".format(dimensions))
+    print("Number of training samples: {}".format(number_of_samples))
     # run.log('learning_rate', lr)
-    print(f"Minibatch Size: {samples_per_minibatch}")
     # run.log("Minibatch Size", samples_per_minibatch)
-    print(f"Width and height of: {dimensions}")
     # run.log("shape", dimensions['width'])
-    print(f"Number of training samples: {number_of_samples}")
     # run.log("samples", number_of_samples)
     # run.log("data_dir", data_dir)
     # run.log("test_dir", test_dir)
@@ -337,7 +334,8 @@ def main(max_epochs, data_dir, test_dir, output_dir, lr, dimensions, number_of_s
                     learning_rate=lr, output_directory=output_dir, with_tf=with_tf)
 
     evaluate_batch(network, reader_eval, samples_per_epoch_test, classes, output_directory=output_dir,
-                   number_of_samples=number_of_samples, with_tf=with_tf, samples_per_minibatch=samples_per_minibatch)
+                   number_of_samples=number_of_samples, with_tf=with_tf, samples_per_minibatch=samples_per_minibatch,
+                   data_dir=data_dir, test_dir=test_dir)
 
 
 if __name__ == '__main__':
@@ -359,17 +357,11 @@ if __name__ == '__main__':
         depth=3
     )
 
-    with open(f'{args.output_dir}/results-{datetime.now().date()}.csv', 'a') as csvfile:
+    with open('{}/results-{}.csv'.format(args.output_dir, datetime.now().date()), 'a') as csvfile:
         fieldnames = ['data_dir', 'test_dir', 'number_of_samples', 'accuracy', 'f_score']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-    for data_dir, test_dir, number_of_samples_set in [
-        ("D:\LEGO Vision Datasets\classification-synthetic-data-color-insensitive-three-channels",
-         "D:\LEGO Vision Datasets\classification-natural-data-color-insensitive-three-channels",
-         [800, 1000])
-    ]:
-        for number_of_samples in number_of_samples_set:
-            main(max_epochs=args.max_epochs, data_dir=data_dir, test_dir=test_dir,
-                 output_dir=args.output_dir, lr=args.lr, samples_per_minibatch=args.mb_size,
-                 dimensions=dimensions, number_of_samples=number_of_samples, with_tf=1)
+    main(max_epochs=args.max_epochs, data_dir=args.data_dir, test_dir=args.test_dir,
+         output_dir=args.output_dir, lr=args.lr, samples_per_minibatch=args.mb_size,
+         dimensions=dimensions, number_of_samples=args.number_of_samples, with_tf=1)
