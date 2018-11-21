@@ -51,7 +51,8 @@ def images_to_hog_and_color_feature(data_dir, number_of_samples, shape, color_in
                                      cells_per_block=(8, 8),
                                      orientations=9,
                                      samples=number_of_samples,
-                                     converter=converter)
+                                     converter=converter,
+                                     debug=True)
     X = preprocessing.scale(X, with_mean=False)
     return X, y
 

@@ -22,20 +22,18 @@ from cntk.metrics import classification_error
 
 abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(abs_path, ".."))
-from Detection.CNN.FasterRCNN.lib.utils.rpn.rpn_helpers import create_rpn, create_proposal_target_layer, \
-    create_proposal_layer
-from Detection.CNN.FasterRCNN.lib.utils.annotations.annotations_helper import parse_class_map_file
-from Detection.CNN.FasterRCNN.lib.utils.od_mb_source import ObjectDetectionMinibatchSource
-from Detection.CNN.FasterRCNN.lib.utils.proposal_helpers import ProposalProvider
-from Detection.CNN.FasterRCNN.lib.FastRCNN_train import clone_model, clone_conv_layers, create_fast_rcnn_predictor, \
-    create_detection_losses
+from utils.rpn.rpn_helpers import create_rpn, create_proposal_target_layer, create_proposal_layer
+from utils.annotations.annotations_helper import parse_class_map_file
+from utils.od_mb_source import ObjectDetectionMinibatchSource
+from utils.proposal_helpers import ProposalProvider
+from FastRCNN_train import clone_model, clone_conv_layers, create_fast_rcnn_predictor, create_detection_losses
 
 
 def prepare(cfg, use_arg_parser=True):
     cfg.MB_SIZE = 1
     cfg.NUM_CHANNELS = 3
     cfg.OUTPUT_PATH = os.path.join(cfg.DATA.MAP_FILE_PATH, "results", datetime.now().strftime("%d-%m-%Y-%H-%M"))
-    cfg["DATA"].MAP_FILE_PATH = os.path.join(abs_path, cfg["DATA"].MAP_FILE_PATH)
+    # cfg["DATA"].MAP_FILE_PATH = os.path.join(abs_path, cfg["DATA"].MAP_FILE_PATH)
     running_locally = os.path.exists(cfg["DATA"].MAP_FILE_PATH)
     if not running_locally:
         # disable debug and plot outputs when running on GPU cluster
@@ -58,8 +56,8 @@ def prepare(cfg, use_arg_parser=True):
     cfg['MODEL_PATH'] = os.path.join(cfg.OUTPUT_PATH, "faster_rcnn_eval_{}_{}_{}.model"
                                      .format(cfg["MODEL"].BASE_MODEL, "e2e" if cfg["CNTK"].TRAIN_E2E else "4stage",
                                              cfg.DATA.DATASET))
-    cfg['BASE_MODEL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..",
-                                          "Pretrained Models",
+    cfg['BASE_MODEL_PATH'] = os.path.join(cfg['DATA'].MAP_FILE_PATH,
+                                          "pretrained-models",
                                           cfg["MODEL"].BASE_MODEL_FILE)
 
     cfg["DATA"].CLASSES = parse_class_map_file(cfg["DATA"].CLASS_MAP_FILE)

@@ -12,7 +12,7 @@ from easydict import EasyDict as edict
 __C = edict()
 __C.DATA = edict()
 cfg = __C
-base_directory = r"D:\LEGO Vision Datasets\Localization\Natural Data"
+base_directory = r"D:\LEGO Vision Datasets\Localization\Faster R-CNN\Natural Data"
 # data set config
 __C.DATA.DATASET = "LEGO Localization Natural"
 __C.DATA.MAP_FILE_PATH = base_directory

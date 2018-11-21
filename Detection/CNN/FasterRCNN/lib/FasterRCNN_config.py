@@ -4,9 +4,6 @@
 # for full license information.
 # ==============================================================================
 
-import os
-import os.path as osp
-import numpy as np
 from easydict import EasyDict as edict
 
 # `pip install easydict` if you don't have it
@@ -27,7 +24,6 @@ __C.CNTK.TRAIN_E2E = True
 # set to 'True' to use deterministic algorithms
 __C.CNTK.FORCE_DETERMINISTIC = False
 # set to 'True' to run only a single epoch
-__C.CNTK.FAST_MODE = False
 # Debug parameters
 __C.CNTK.DEBUG_OUTPUT = False
 __C.CNTK.GRAPH_TYPE = "png"  # "png" or "pdf"

@@ -230,62 +230,33 @@ class MeanAveragePrecision:
     def draw_plot_func(self, dictionary, n_classes, window_title, plot_title, x_label, output_path, to_show, plot_color,
                        true_p_bar):
         # TODO: Rewrite this function to something readable
-        # sort the dictionary by decreasing value, into a list of tuples
-        sorted_dic_by_value = sorted(dictionary.items(), key=lambda x: x[1])
-        # unpacking the list of tuples into two lists
-        sorted_keys, sorted_values = zip(*sorted_dic_by_value)
+        numerically_sorted = self.numerical_sort(dictionary)
+        sorted_keys, sorted_values = zip(*numerically_sorted)
         #
         if true_p_bar != "":
-            fp_sorted = []
-            tp_sorted = []
-            for key in sorted_keys:
-                fp_sorted.append(dictionary[key] - true_p_bar[key])
-                tp_sorted.append(true_p_bar[key])
-            plt.barh(range(n_classes), fp_sorted, align='center', color='crimson', label='False Predictions')
-            plt.barh(range(n_classes), tp_sorted, align='center', color='forestgreen', label='True Predictions',
-                     left=fp_sorted)
-            plt.legend(loc='lower right')
-            """
-             Write number on side of bar
-            """
-            fig = plt.gcf()  # gcf - get current figure
-            axes = plt.gca()
-            r = fig.canvas.get_renderer()
-            for i, val in enumerate(sorted_values):
-                fp_val = fp_sorted[i]
-                tp_val = tp_sorted[i]
-                fp_str_val = " " + str(fp_val)
-                tp_str_val = fp_str_val + " " + str(tp_val)
-                # trick to paint multicolor with offset:
-                #   first paint everything and then repaint the first number
-                t = plt.text(val, i, tp_str_val, color='forestgreen', va='center', fontweight='bold')
-                plt.text(val, i, fp_str_val, color='crimson', va='center', fontweight='bold')
-                if i == (len(sorted_values) - 1):  # largest bar
-                    self.adjust_axes(r, t, fig, axes)
+            fig = self.add_absolute_values_horizontal_bars(dictionary, n_classes, sorted_keys, sorted_values,
+                                                           true_p_bar)
         else:
-            plt.barh(range(n_classes), sorted_values, color=plot_color)
-            """
-             Write number on side of bar
-            """
-            fig = plt.gcf()  # gcf - get current figure
-            axes = plt.gca()
-            r = fig.canvas.get_renderer()
-            for i, val in enumerate(sorted_values):
-                str_val = " " + str(val)  # add a space before
-                if val < 1.0:
-                    str_val = " {0:.2f}".format(val)
-                t = plt.text(val, i, str_val, color=plot_color, va='center', fontweight='bold')
-                # re-set axes to show number inside the figure
-                if i == (len(sorted_values) - 1):  # largest bar
-                    self.adjust_axes(r, t, fig, axes)
+            fig = self.add_normalized_horizontal_bars(n_classes, plot_color, sorted_values)
         # set window title
         fig.canvas.set_window_title(window_title)
         # write classes in y axis
         tick_font_size = 12
+        self.add_class_labels(n_classes, sorted_keys, tick_font_size)
+        self.rescale_plot(fig, n_classes, tick_font_size)
+
+        plt.title(plot_title, fontsize=14)
+        plt.xlabel(x_label, fontsize='large')
+        fig.tight_layout()
+        fig.savefig(output_path)
+        if to_show:
+            plt.show()
+        plt.close()
+
+    def add_class_labels(self, n_classes, sorted_keys, tick_font_size):
         plt.yticks(range(n_classes), sorted_keys, fontsize=tick_font_size)
-        """
-         Re-scale height accordingly
-        """
+
+    def rescale_plot(self, fig, n_classes, tick_font_size):
         init_height = fig.get_figheight()
         # comput the matrix height in points and inches
         dpi = fig.dpi
@@ -299,20 +270,55 @@ class MeanAveragePrecision:
         if figure_height > init_height:
             fig.set_figheight(figure_height)
 
-        # set plot title
-        plt.title(plot_title, fontsize=14)
-        # set axis titles
-        # plt.xlabel('classes')
-        plt.xlabel(x_label, fontsize='large')
-        # adjust size of window
-        fig.tight_layout()
-        # save the plot
-        fig.savefig(output_path)
-        # show image
-        if to_show:
-            plt.show()
-        # close the plot
-        plt.close()
+    def numerical_sort(self, dictionary):
+        return sorted(dictionary.items(), key=lambda x: x[1])
+
+    def add_absolute_values_horizontal_bars(self, dictionary, n_classes, sorted_keys, sorted_values, true_p_bar):
+        fp_sorted = []
+        tp_sorted = []
+        for key in sorted_keys:
+            fp_sorted.append(dictionary[key] - true_p_bar[key])
+            tp_sorted.append(true_p_bar[key])
+        plt.barh(range(n_classes), fp_sorted, align='center', color='crimson', label='False Predictions')
+        plt.barh(range(n_classes), tp_sorted, align='center', color='forestgreen', label='True Predictions',
+                 left=fp_sorted)
+        plt.legend(loc='lower right')
+        """
+                 Write number on side of bar
+                """
+        fig = plt.gcf()  # gcf - get current figure
+        axes = plt.gca()
+        r = fig.canvas.get_renderer()
+        for i, class_results in enumerate(sorted_values):
+            fp_val = fp_sorted[i]
+            tp_val = tp_sorted[i]
+            fp_str_val = " " + str(fp_val)
+            tp_str_val = fp_str_val + " " + str(tp_val)
+            # trick to paint multicolor with offset:
+            #   first paint everything and then repaint the first number
+            t = plt.text(class_results, i, tp_str_val, color='forestgreen', va='center', fontweight='bold')
+            plt.text(class_results, i, fp_str_val, color='crimson', va='center', fontweight='bold')
+            if i == (len(sorted_values) - 1):  # largest bar
+                self.adjust_axes(r, t, fig, axes)
+        return fig
+
+    def add_normalized_horizontal_bars(self, n_classes, plot_color, sorted_values):
+        plt.barh(range(n_classes), sorted_values, color=plot_color)
+        """
+                 Write number on side of bar
+                """
+        fig = plt.gcf()  # gcf - get current figure
+        axes = plt.gca()
+        r = fig.canvas.get_renderer()
+        for i, val in enumerate(sorted_values):
+            str_val = " " + str(val)  # add a space before
+            if val < 1.0:
+                str_val = " {0:.2f}".format(val)
+            t = plt.text(val, i, str_val, color=plot_color, va='center', fontweight='bold')
+            # re-set axes to show number inside the figure
+            if i == (len(sorted_values) - 1):  # largest bar
+                self.adjust_axes(r, t, fig, axes)
+        return fig
 
     def count_total_predictions(self):
         predicted_files = glob.glob(os.path.join(self.base_directory, "predicted", "*.txt"))
@@ -439,4 +445,4 @@ class MeanAveragePrecision:
 
 
 if __name__ == "__main__":
-    MeanAveragePrecision(base_directory=r"D:\LEGO Vision Datasets\Localization\Natural Data\results\svm").evaluate()
+    MeanAveragePrecision(base_directory=r"D:\LEGO Vision Datasets\Detection\SVM\results\500 samples").evaluate()

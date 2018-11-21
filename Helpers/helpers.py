@@ -109,7 +109,7 @@ def pipeline(image, shape: tuple = None, smoothing: float = 0.0, denoising: floa
                        cells_per_block=cells_per_block, visualize=True,
                        multichannel=multichannel,
                        block_norm="L2-Hys")
-        dom_color = dominant_color(image, k=2 if multichannel else 2)
+        dom_color = dominant_color(image, k=2)
         if debug:
             plot_debug(converted, converter, dom_color, original, shape, show)
         image = np.concatenate((dom_color, fd), axis=None)

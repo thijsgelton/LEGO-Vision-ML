@@ -104,7 +104,7 @@ class SelectiveSearchEvaluator:
     def preproccesing(image, shape):
         preprocessed = helpers.pipeline(image, shape=shape, smoothing=0.1, with_hog_attached=True,
                                         with_dominant_color_attached=True, pixels_per_cell=(shape[0] / 8, shape[0] / 8),
-                                        cells_per_block=(8, 8), debug=True)
+                                        cells_per_block=(8, 8), debug=False)
         preprocessed = preprocessing.scale(preprocessed, with_mean=False)
         return preprocessed
 
@@ -116,19 +116,24 @@ class SelectiveSearchEvaluator:
     def extract_sub_image_for_training(self, image, bbox, label):
         label_directory = os.path.join(self.hard_negative_mining_directory, label)
         os.makedirs(label_directory, exist_ok=True)
-        imageio.imwrite(os.path.join(label_directory, str(uuid.uuid4()) + '.jpg'), self.reshape_and_cut(bbox, image))
+        imageio.imwrite(os.path.join(label_directory, str(uuid.uuid4()) + '.jpg'),
+                        self.cut_out_sub_image(bbox, image, add_padding=False))
 
-    def reshape_and_cut(self, bbox, image):
-        x1, y1, w, h = utils.x2_y2_to_w_h(utils.reshape_bbox(bbox, [self.classifier_dimension] * 2))
-        move_up = int(h * 0.50) if y1 - int(h * 0.50) > 0 else 0
-        move_left = int(w * 0.50) if x1 - int(w * 0.50) > 0 else 0
-        scale_down = int(h * 1.50) if y1 + int(h * 1.50) < image.shape[0] else abs(y1 - image.shape[0])
-        scale_right = int(w * 1.50) if x1 + int(w * 1.50) < image.shape[1] else abs(x1 - image.shape[1])
-        return image[y1 - move_up:y1 + scale_down, x1 - move_left:x1 + scale_right, :]
+    def cut_out_sub_image(self, bbox, image, add_padding=True):
+        if add_padding:
+            x1, y1, w, h = utils.x2_y2_to_w_h(utils.reshape_bbox(bbox, [self.classifier_dimension] * 2))
+            move_up = int(h * 0.50) if y1 - int(h * 0.50) > 0 else 0
+            move_left = int(w * 0.50) if x1 - int(w * 0.50) > 0 else 0
+            scale_down = int(h * 1.50) if y1 + int(h * 1.50) < image.shape[0] else abs(y1 - image.shape[0])
+            scale_right = int(w * 1.50) if x1 + int(w * 1.50) < image.shape[1] else abs(x1 - image.shape[1])
+            return image[y1 - move_up:y1 + scale_down, x1 - move_left:x1 + scale_right, :]
+        else:
+            x1, y1, w, h = utils.x2_y2_to_w_h(utils.reshape_bbox(bbox, [self.classifier_dimension] * 2))
+            return image[y1:y1 + h, x1:x1 + w, :]
 
 
 if __name__ == "__main__":
-    from Detection.SVM.config.detection_natural_70 import *
+    from Detection.SVM.config.detection_natural_500 import *
 
     selective_search_config = dict(
         scale=350,
@@ -142,9 +147,10 @@ if __name__ == "__main__":
         gt_labels_path=gt_labels_paths,
         classifier=joblib.load(classifier),
         label_lookup=label_lookup,
-        plot_every_n_images=1,
+        plot_every_n_images=70,
         image_dimension=1024,
         # output_directory=output_directory,
+        hard_negative_mining_directory=r"D:\LEGO Vision Datasets\Detection\SVM\Hard Negative Mining 2",
         selective_search_config=selective_search_config
     )
     evaluator.eval()

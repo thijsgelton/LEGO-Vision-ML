@@ -100,17 +100,17 @@ def get_ground_truth_info(image, scale, padding):
 if __name__ == "__main__":
     count = 0
     total_time = 0
-    base_directory = r"D:\LEGO Vision Datasets\Detection\Faster R-CNN\Natural Data_output 350 samples"
-    output_directory = os.path.join(base_directory, "results", "19-11-2018-14-36")
+    base_directory = r"D:\LEGO Vision Datasets\Detection\Faster R-CNN\Natural Data_output 500 samples"
+    output_directory = os.path.join(base_directory, "results", "16-11-2018-16-02", "No cut off bricks")
     label_lookup = list(map(lambda x: x.split('\t')[0],
                             open(os.path.join(base_directory, "class_map.txt")).readlines()))
-    model = load_model(os.path.join(base_directory, "results", "19-11-2018-14-36",
-                                    "faster_rcnn_eval_AlexNet_e2e_LEGO Natural Data - 350.model"))
-    cfg = EasyDict(json.load(open(os.path.join(base_directory, "results", "19-11-2018-14-36", "settings.json"))))
+    model = load_model(os.path.join(base_directory, "results", "16-11-2018-16-02",
+                                    "faster_rcnn_eval_AlexNet_e2e - 500 samples natural data.model"))
+    cfg = EasyDict(json.load(open(os.path.join(base_directory, "results", "16-11-2018-16-02", "settings.json"))))
 
-    for image_path in glob.glob(os.path.join(base_directory, "testImages", "*.jpg")):
+    for image_path in glob.glob(os.path.join(base_directory, "testImages", "No cut off bricks", "*.jpg")):
         start = time.time()
-        evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=True, with_map_eval=True)
+        evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=False, with_map_eval=True)
         total_time += time.time() - start
         count += 1
     print("Average prediction time is: {}".format(total_time / count))

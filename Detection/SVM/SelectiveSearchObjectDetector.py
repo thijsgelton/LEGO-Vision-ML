@@ -49,7 +49,7 @@ class SelectiveSearchObjectDetector:
             labels.append(prediction.argmax(axis=0))
         print("Before NMS {} Bounding boxes".format(len(bboxes)))
         keep_indices = apply_nms_to_single_image_results(coords=bboxes, labels=labels, scores=scores, use_gpu_nms=True,
-                                                         device_id=0, conf_threshold=0.6)
+                                                         device_id=0, nms_threshold=0.9, conf_threshold=0.9)
         bboxes = np.array(bboxes)[keep_indices]
         labels = np.array(list(map(lambda x: self.label_lookup[x], labels)))[keep_indices]
         scores = np.array(scores)[keep_indices]

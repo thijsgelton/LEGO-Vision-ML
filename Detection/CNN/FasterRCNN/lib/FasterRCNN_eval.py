@@ -3,13 +3,18 @@
 # Licensed under the MIT license. See LICENSE.md file in the project root
 # for full license information.
 # ==============================================================================
+import os
+import sys
 
 import numpy as np
 from cntk import input_variable, Axis
-from Detection.CNN.FasterRCNN.lib.utils.map_helpers import evaluate_detections
-from Detection.CNN.FasterRCNN.lib.utils.plot_helpers import load_resize_and_pad
-from Detection.CNN.FasterRCNN.lib.utils.rpn.bbox_transform import regress_rois
-from Detection.CNN.FasterRCNN.lib.utils.od_mb_source import ObjectDetectionMinibatchSource
+
+abs_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(abs_path, ".."))
+from utils.map_helpers import evaluate_detections
+from utils.plot_helpers import load_resize_and_pad
+from utils.rpn.bbox_transform import regress_rois
+from utils.od_mb_source import ObjectDetectionMinibatchSource
 
 
 class FasterRCNN_Evaluator:
