@@ -13,8 +13,8 @@ import copy, textwrap
 from PIL import Image, ImageFont, ImageDraw
 from PIL.ExifTags import TAGS
 
-from Detection.CNN.FasterRCNN.lib.utils.nms_wrapper import apply_nms_to_single_image_results
-from Detection.CNN.FasterRCNN.lib.utils.rpn.bbox_transform import regress_rois
+from lib.utils.nms_wrapper import apply_nms_to_single_image_results
+from lib.utils.rpn.bbox_transform import regress_rois
 import cv2  # pip install opencv-python
 
 available_font = "arial.ttf"

@@ -2,8 +2,10 @@ import glob
 import json
 import os
 import re
+import sys
 import time
 
+import cntk
 import cv2
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -11,10 +13,13 @@ import numpy as np
 from cntk import load_model
 from easydict import EasyDict
 
-from Detection.CNN.FasterRCNN.lib.FasterRCNN_eval import FasterRCNN_Evaluator
+abs_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(abs_path, ".."))
+
+from lib.FasterRCNN_eval import FasterRCNN_Evaluator
 from Helpers import utils
-from Detection.CNN.FasterRCNN.lib.utils.nms_wrapper import apply_nms_to_single_image_results
-from Detection.CNN.FasterRCNN.lib.utils.rpn.bbox_transform import regress_rois
+from lib.utils.nms_wrapper import apply_nms_to_single_image_results
+from lib.utils.rpn.bbox_transform import regress_rois
 
 
 def evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=False, with_map_eval=False):
@@ -100,17 +105,18 @@ def get_ground_truth_info(image, scale, padding):
 if __name__ == "__main__":
     count = 0
     total_time = 0
+    cntk.device.try_set_default_device(cntk.device.gpu(0))
     base_directory = r"D:\LEGO Vision Datasets\Detection\Faster R-CNN\Natural Data_output 500 samples"
-    output_directory = os.path.join(base_directory, "results", "16-11-2018-16-02", "No cut off bricks")
+    output_directory = os.path.join(base_directory, "results", "16-11-2018-16-02")
     label_lookup = list(map(lambda x: x.split('\t')[0],
                             open(os.path.join(base_directory, "class_map.txt")).readlines()))
     model = load_model(os.path.join(base_directory, "results", "16-11-2018-16-02",
                                     "faster_rcnn_eval_AlexNet_e2e - 500 samples natural data.model"))
     cfg = EasyDict(json.load(open(os.path.join(base_directory, "results", "16-11-2018-16-02", "settings.json"))))
 
-    for image_path in glob.glob(os.path.join(base_directory, "testImages", "No cut off bricks", "*.jpg")):
+    for image_path in glob.glob(os.path.join(base_directory, "testImages", "*.jpg"))[:5]:
         start = time.time()
-        evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=False, with_map_eval=True)
+        evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=True, with_map_eval=False)
         total_time += time.time() - start
         count += 1
     print("Average prediction time is: {}".format(total_time / count))

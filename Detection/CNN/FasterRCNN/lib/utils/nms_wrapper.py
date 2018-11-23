@@ -6,7 +6,7 @@
 
 import numpy as np
 
-from Detection.CNN.FasterRCNN.lib.utils.cython_modules.cpu_nms import cpu_nms
+from lib.utils.cython_modules.cpu_nms import cpu_nms
 
 try:
     from utils.cython_modules.gpu_nms import gpu_nms

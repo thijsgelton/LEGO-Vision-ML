@@ -445,4 +445,4 @@ class MeanAveragePrecision:
 
 
 if __name__ == "__main__":
-    MeanAveragePrecision(base_directory=r"D:\LEGO Vision Datasets\Detection\SVM\results\500 samples").evaluate()
+    MeanAveragePrecision(base_directory=r"D:\LEGO Vision Datasets\Localization\Faster R-CNN\Synthetic Data\results\20-11-2018-10-37").evaluate()

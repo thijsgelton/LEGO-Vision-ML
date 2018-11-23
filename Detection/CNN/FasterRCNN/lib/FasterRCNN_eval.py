@@ -11,10 +11,10 @@ from cntk import input_variable, Axis
 
 abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(abs_path, ".."))
-from utils.map_helpers import evaluate_detections
-from utils.plot_helpers import load_resize_and_pad
-from utils.rpn.bbox_transform import regress_rois
-from utils.od_mb_source import ObjectDetectionMinibatchSource
+from .utils.map_helpers import evaluate_detections
+from .utils.plot_helpers import load_resize_and_pad
+from .utils.rpn.bbox_transform import regress_rois
+from .utils.od_mb_source import ObjectDetectionMinibatchSource
 
 
 class FasterRCNN_Evaluator:

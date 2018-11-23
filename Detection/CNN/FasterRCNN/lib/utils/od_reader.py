@@ -8,7 +8,7 @@ import zipfile
 import cv2
 import numpy as np
 import os
-from Detection.CNN.FasterRCNN.lib.utils.proposal_helpers import compute_targets, compute_image_stats
+from lib.utils.proposal_helpers import compute_targets, compute_image_stats
 
 DEBUG = False
 if DEBUG:

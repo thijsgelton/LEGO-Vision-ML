@@ -253,7 +253,7 @@ def evaluate_batch(network, reader_eval, samples_per_epoch_eval, classes, output
                                                      normalize=True)
     accuracy = accuracy_score(y_true, y_pred)
     fscore = fbeta_score(y_true, y_pred, beta=0.5, average='macro')
-    # run.log('f_score', np.float(fscore))
+    # run.log_metric('f_score', np.float(fscore))
     # save model to outputs folder
 
     with open('{}/results-{}.csv'.format(args.output_dir, datetime.now().date()), 'a', newline='') as csvfile:
@@ -312,12 +312,12 @@ def main(max_epochs, data_dir, test_dir, output_dir, lr, dimensions, number_of_s
     print("Minibatch Size: {}".format(samples_per_minibatch))
     print("Width and height of: {}".format(dimensions))
     print("Number of training samples: {}".format(number_of_samples))
-    # run.log('learning_rate', lr)
-    # run.log("Minibatch Size", samples_per_minibatch)
-    # run.log("shape", dimensions['width'])
-    # run.log("samples", number_of_samples)
-    # run.log("data_dir", data_dir)
-    # run.log("test_dir", test_dir)
+    # run.log_metric('learning_rate', lr)
+    # run.log_metric("Minibatch Size", samples_per_minibatch)
+    # run.log_metric("shape", dimensions['width'])
+    # run.log_metric("samples", number_of_samples)
+    # run.log_metric("data_dir", data_dir)
+    # run.log_metric("test_dir", test_dir)
     reader_train = create_reader(map_file=train_map_file, dimensions=dimensions, classes=classes, train=True,
                                  total_number_of_samples=max_amount_of_epochs * samples_per_epoch_train,
                                  mean_file=mean_file)

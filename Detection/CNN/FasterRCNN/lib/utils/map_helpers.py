@@ -5,7 +5,7 @@
 # ==============================================================================
 
 import numpy as np
-from Detection.CNN.FasterRCNN.lib.utils.nms_wrapper import apply_nms_to_test_set_results
+from lib.utils.nms_wrapper import apply_nms_to_test_set_results
 
 
 def evaluate_detections(all_boxes, all_gt_infos, classes,

@@ -7,7 +7,8 @@
 import numpy as np
 import cntk
 from cntk import reduce_sum, ops
-from cntk import user_function, relu, softmax, slice, splice, reshape, element_times, plus, minus, alias, classification_error
+from cntk import user_function, relu, softmax, slice, splice, reshape, element_times, plus, minus, alias, \
+    classification_error
 from cntk.initializer import glorot_uniform, normal
 from cntk.layers import Convolution
 from cntk.losses import cross_entropy_with_softmax
@@ -15,6 +16,7 @@ from utils.rpn.anchor_target_layer import AnchorTargetLayer
 from utils.rpn.proposal_layer import ProposalLayer
 from utils.rpn.proposal_target_layer import ProposalTargetLayer
 from utils.rpn.cntk_smoothL1_loss import SmoothL1Loss
+
 
 def create_rpn(conv_out, scaled_gt_boxes, im_info, cfg, add_loss_functions=True):
     '''
@@ -43,15 +45,16 @@ def create_rpn(conv_out, scaled_gt_boxes, im_info, cfg, add_loss_functions=True)
     # init = 'normal', initValueScale = 0.01, initBias = 0.1
     num_channels = cfg["MODEL"].RPN_NUM_CHANNELS
     rpn_conv_3x3 = Convolution((3, 3), num_channels, activation=relu, pad=True, strides=1,
-                                init = normal(scale=0.01), init_bias=0.0)(conv_out)
+                               init=normal(scale=0.01), init_bias=0.0)(conv_out)
     rpn_cls_score = Convolution((1, 1), 18, activation=None, name="rpn_cls_score",
-                                init = normal(scale=0.01), init_bias=0.0)(rpn_conv_3x3)  # 2(bg/fg)  * 9(anchors)
+                                init=normal(scale=0.01), init_bias=0.0)(rpn_conv_3x3)  # 2(bg/fg)  * 9(anchors)
     rpn_bbox_pred = Convolution((1, 1), 36, activation=None, name="rpn_bbox_pred",
-                                init = normal(scale=0.01), init_bias=0.0)(rpn_conv_3x3)  # 4(coords) * 9(anchors)
+                                init=normal(scale=0.01), init_bias=0.0)(rpn_conv_3x3)  # 4(coords) * 9(anchors)
 
     # apply softmax to get (bg, fg) probabilities and reshape predictions back to grid of (18, H, W)
     num_predictions = int(rpn_cls_score.shape[0] / 2)
-    rpn_cls_score_rshp = reshape(rpn_cls_score, (2, num_predictions, rpn_cls_score.shape[1], rpn_cls_score.shape[2]), name="rpn_cls_score_rshp")
+    rpn_cls_score_rshp = reshape(rpn_cls_score, (2, num_predictions, rpn_cls_score.shape[1], rpn_cls_score.shape[2]),
+                                 name="rpn_cls_score_rshp")
     p_rpn_cls_score_rshp = cntk.placeholder()
     rpn_cls_sm = softmax(p_rpn_cls_score_rshp, axis=0)
     rpn_cls_prob = cntk.as_block(rpn_cls_sm, [(p_rpn_cls_score_rshp, rpn_cls_score_rshp)], 'Softmax', 'rpn_cls_prob')
@@ -61,7 +64,7 @@ def create_rpn(conv_out, scaled_gt_boxes, im_info, cfg, add_loss_functions=True)
     rpn_rois = create_proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg)
 
     rpn_losses = None
-    if(add_loss_functions):
+    if (add_loss_functions):
         # RPN targets
         # Comment: rpn_cls_score is only passed   vvv   to get width and height of the conv feature map ...
         proposal_layer_params = "'feat_stride': {}\n'scales':\n - {}". \
@@ -101,7 +104,8 @@ def create_rpn(conv_out, scaled_gt_boxes, im_info, cfg, add_loss_functions=True)
         p_rpn_bbox_pred = cntk.placeholder()
         p_rpn_bbox_targets = cntk.placeholder()
         p_rpn_bbox_inside_weights = cntk.placeholder()
-        rpn_loss_bbox = SmoothL1Loss(cfg.SIGMA_RPN_L1, p_rpn_bbox_pred, p_rpn_bbox_targets, p_rpn_bbox_inside_weights, 1.0)
+        rpn_loss_bbox = SmoothL1Loss(cfg.SIGMA_RPN_L1, p_rpn_bbox_pred, p_rpn_bbox_targets, p_rpn_bbox_inside_weights,
+                                     1.0)
         # The bbox loss is normalized by the rpn batch size
         bbox_normalization_factor = 1.0 / cfg["TRAIN"].RPN_BATCHSIZE
         normalized_rpn_bbox_loss = reduce_sum(rpn_loss_bbox) * bbox_normalization_factor
@@ -114,6 +118,7 @@ def create_rpn(conv_out, scaled_gt_boxes, im_info, cfg, add_loss_functions=True)
         rpn_losses = plus(reduced_rpn_loss_cls, reduced_rpn_loss_bbox, name="rpn_losses")
 
     return rpn_rois, rpn_losses
+
 
 def create_proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, use_native_proposal_layer=False):
     layer_config = {}
@@ -140,6 +145,7 @@ def create_proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, use
         rpn_rois_raw = user_function(ProposalLayer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, layer_config))
 
     return alias(rpn_rois_raw, name='rpn_rois')
+
 
 def create_proposal_target_layer(rpn_rois, scaled_gt_boxes, cfg):
     '''
@@ -182,5 +188,3 @@ def create_proposal_target_layer(rpn_rois, scaled_gt_boxes, cfg):
     bbox_inside_weights = ptl.outputs[3]
 
     return rois, label_targets, bbox_targets, bbox_inside_weights
-
-

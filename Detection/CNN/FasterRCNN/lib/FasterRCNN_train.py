@@ -586,7 +586,7 @@ def train_model(image_input, roi_input, dims_input, loss, pred_error,
                                                       input_map=input_map)
             trainer.train_minibatch(data)  # update model with it
             sample_count += trainer.previous_minibatch_sample_count  # count samples processed so far
-            progress_printer.update_with_trainer(trainer, with_metric=True)  # log progress
+            progress_printer.update_with_trainer(trainer, with_metric=True)  # log_metric progress
             if sample_count % 100 == 0:
                 print("Processed {} samples".format(sample_count))
 
