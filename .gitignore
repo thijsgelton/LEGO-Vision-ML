@@ -14,8 +14,8 @@ Classification/Final models
 Pretrained Models
 Detection/SVM/Output
 Localization/SVM/models
-
-
+Notebooks/Azure Machine Learning Service/aml_directories
+Experiments/
 
 # Distribution / packaging
 .Python
