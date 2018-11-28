@@ -114,7 +114,7 @@ if __name__ == "__main__":
                                     "faster_rcnn_eval_AlexNet_e2e - 500 samples natural data.model"))
     cfg = EasyDict(json.load(open(os.path.join(base_directory, "results", "16-11-2018-16-02", "settings.json"))))
 
-    for image_path in glob.glob(os.path.join(base_directory, "testImages", "*.jpg"))[:15]:
+    for image_path in glob.glob(os.path.join(r"C:\Users\Thijs\OneDrive\LEGO Vision\Demo", "*.jpg")):
         start = time.time()
         evaluate_image(image_path, label_lookup, model, cfg, output_directory, plot_bboxes=True, with_map_eval=False)
         total_time += time.time() - start
