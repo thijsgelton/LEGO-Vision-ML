@@ -3,9 +3,13 @@
 # Licensed under the MIT license. See LICENSE.md file in the project root
 # for full license information.
 # ==============================================================================
+import os
 
 import numpy as np
+import sys
 
+abs_path = os.path.abspath(__file__)
+sys.path.append(os.path.join(abs_path, "..", "..", ".."))
 from lib.utils.cython_modules.cpu_nms import cpu_nms
 
 try:
