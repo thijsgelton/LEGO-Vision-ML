@@ -53,7 +53,6 @@ class SelectiveSearchObjectDetector:
         bboxes = np.array(bboxes)[keep_indices]
         labels = np.array(list(map(lambda x: self.label_lookup[x], labels)))[keep_indices]
         scores = np.array(scores)[keep_indices]
-
         print("After NMS {} Bounding boxes".format(len(bboxes)))
         return bboxes, scores.tolist(), labels.tolist()
 

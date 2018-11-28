@@ -19,7 +19,7 @@ class SelectiveSearchEvaluator:
     def __init__(self, image_paths, gt_bbox_paths, gt_labels_path, classifier, label_lookup,
                  selective_search_config, image_dimension=1024,
                  classifier_dimension=256, plot_every_n_images=None,
-                 hard_negative_mining_directory=None, output_directory=None):
+                 hard_negative_mining_directory=None, output_directory=None, with_padding=True):
         self.image_paths = image_paths
         self.gt_bbox_paths = gt_bbox_paths
         self.gt_labels_path = gt_labels_path
@@ -32,12 +32,13 @@ class SelectiveSearchEvaluator:
         self.hard_negative_mining_directory = hard_negative_mining_directory
         self.output_directory = output_directory
         self.selective_search_config = selective_search_config
+        self.with_padding = with_padding
 
     def eval(self):
         for index, image_path, in tqdm(enumerate(self.image_paths), total=len(self.image_paths)):
             image, scale, padding = self.read_image(image_path)
-            gt_bboxes = self.read_bboxes(self.gt_bbox_paths[index], scale, padding)
-            gt_labels = self.read_labels(self.gt_labels_path[index])
+            gt_bboxes = self.read_bboxes(self.gt_bbox_paths[index], scale, padding) if self.gt_bbox_paths else []
+            gt_labels = self.read_labels(self.gt_labels_path[index]) if self.gt_labels_path else []
             plot = self.plot_every_n_images and index % self.plot_every_n_images == 0
             if plot:
                 utils.display_bounding_boxes(image, gt_bboxes, gt_labels)
@@ -75,15 +76,20 @@ class SelectiveSearchEvaluator:
         return actual, predicted, gt_bboxes
 
     def read_image(self, image_path):
-        if self.image_dimension != -1:
+        if self.with_padding:
             image, scale, padding = utils.resize_and_pad(img=cv2.cvtColor(cv2.imread(image_path),
                                                                           cv2.COLOR_BGR2RGB),
                                                          width=self.image_dimension,
                                                          height=self.image_dimension)
+        elif not self.with_padding and self.image_dimension > -1:
+            image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+            print(image.shape)
+            scale = self.image_dimension / image.shape[1]
+            image = helpers.image_resize(image, width=self.image_dimension)
+            padding = (0, 0, 0, 0)
         else:
-            image = cv2.cvtColor(cv2.imread(image_path),
-                                 cv2.COLOR_BGR2RGB)
             scale = 1.0
+            image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
             padding = (0, 0, 0, 0)
         return image, scale, padding
 
@@ -103,7 +109,8 @@ class SelectiveSearchEvaluator:
     @staticmethod
     def preproccesing(image, shape):
         preprocessed = helpers.pipeline(image, shape=shape, smoothing=0.1, with_hog_attached=True,
-                                        with_dominant_color_attached=True, pixels_per_cell=(shape[0] / 8, shape[0] / 8),
+                                        with_dominant_color_attached=True, with_mean_color_attached=False,
+                                        pixels_per_cell=(shape[0] / 8, shape[0] / 8),
                                         cells_per_block=(8, 8), debug=False)
         preprocessed = preprocessing.scale(preprocessed, with_mean=False)
         return preprocessed
@@ -147,10 +154,11 @@ if __name__ == "__main__":
         gt_labels_path=gt_labels_paths,
         classifier=joblib.load(classifier),
         label_lookup=label_lookup,
-        plot_every_n_images=70,
+        plot_every_n_images=50,
         image_dimension=1024,
-        # output_directory=output_directory,
-        hard_negative_mining_directory=r"D:\LEGO Vision Datasets\Detection\SVM\Hard Negative Mining 2",
+        with_padding=False,
+        output_directory=output_directory,
+        # hard_negative_mining_directory=r"D:\LEGO Vision Datasets\Detection\SVM\Hard Negative Mining 2",
         selective_search_config=selective_search_config
     )
     evaluator.eval()
