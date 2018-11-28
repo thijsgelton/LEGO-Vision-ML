@@ -45,8 +45,8 @@ def main():
     client = MongoClient(host="localhost")
     natural_data = client.get_database("lego_vision").get_collection("natural_data_hog_dom")
     natural_data_hard_negative_mined = client.get_database("lego_vision").get_collection(
-        "natural_hog_dom_negative_mining")
-    export_path = os.path.abspath(os.path.join("..", "..", "Final models", "SVM", "SVM-3200-256W-HNM.joblib"))
+        "natural_hog_dom_negative_mining_mean_color")
+    export_path = os.path.abspath(os.path.join("..", "..", "Final models", "SVM", "SVM-3200-256W-HNM-MC.joblib"))
     print("Exporting model to {} after training".format(export_path))
     finalize_model([natural_data, natural_data_hard_negative_mined], export_path, number_of_samples=3200, shape=256)
 

@@ -46,13 +46,14 @@ def images_to_hog_and_color_feature(data_dir, number_of_samples, shape, color_in
                                      smoothing=0.1,
                                      denoising=0.0,
                                      with_hog_attached=True,
-                                     with_dominant_color_attached=True,
+                                     with_dominant_color_attached=False,
+                                     with_mean_color_attached=True,
                                      pixels_per_cell=(shape[0] / 8, shape[0] / 8),
                                      cells_per_block=(8, 8),
                                      orientations=9,
                                      samples=number_of_samples,
                                      converter=converter,
-                                     debug=True)
+                                     debug=False)
     X = preprocessing.scale(X, with_mean=False)
     return X, y
 
@@ -196,6 +197,6 @@ if __name__ == "__main__":
         dimensions="256",
         host="localhost",
         database="lego_vision",
-        collection="natural_hog_dom_negative_mining",
+        collection="natural_hog_dom_negative_mining_mean_color",
         color_insensitive=False
     )

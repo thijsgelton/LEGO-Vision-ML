@@ -66,8 +66,9 @@ def from_disk(color_insensitive, data_dir, number_of_samples, shape):
     return X, y
 
 
-def images_to_dataset(dataset_path, shape, smoothing, denoising, with_hog_attached, with_dominant_color_attached,
-                      pixels_per_cell, cells_per_block, orientations, samples=300, converter=None, debug=False):
+def images_to_dataset(dataset_path, shape, smoothing, denoising, with_hog_attached, with_mean_color_attached,
+                      pixels_per_cell, cells_per_block, orientations, samples=300, converter=None, debug=False,
+                      with_dominant_color_attached=False):
     X = []
     y = []
     for subfolder in list(os.walk(dataset_path))[0][1]:
@@ -78,6 +79,7 @@ def images_to_dataset(dataset_path, shape, smoothing, denoising, with_hog_attach
                 image = np.array(Image.open(os.path.join(file)))
                 image = pipeline(image, shape=shape, smoothing=smoothing, denoising=denoising,
                                  with_hog_attached=with_hog_attached,
+                                 with_mean_color_attached=with_mean_color_attached,
                                  with_dominant_color_attached=with_dominant_color_attached,
                                  pixels_per_cell=pixels_per_cell, cells_per_block=cells_per_block,
                                  orientations=orientations, converter=converter, debug=debug)
@@ -88,6 +90,7 @@ def images_to_dataset(dataset_path, shape, smoothing, denoising, with_hog_attach
 
 def pipeline(image, shape: tuple = None, smoothing: float = 0.0, denoising: float = 0.0,
              with_hog_attached: bool = False, with_dominant_color_attached: bool = False,
+             with_mean_color_attached: bool = False,
              pixels_per_cell: tuple = (3, 3), cells_per_block: tuple = (5, 5), orientations: int = 9, converter=None,
              debug=False):
     if shape and len(shape) > 1:
@@ -103,16 +106,22 @@ def pipeline(image, shape: tuple = None, smoothing: float = 0.0, denoising: floa
     if callable(converter):
         image = converter(image)
         converted = image
-    if with_dominant_color_attached:
+    if with_dominant_color_attached or with_mean_color_attached:
         multichannel = True if len(image.shape) == 3 and image.shape[-1] > 1 else False
         fd, show = hog(image, orientations=orientations, pixels_per_cell=pixels_per_cell,
                        cells_per_block=cells_per_block, visualize=True,
                        multichannel=multichannel,
                        block_norm="L2-Hys")
-        dom_color = dominant_color(image, k=2)
-        if debug:
-            plot_debug(converted, converter, dom_color, original, shape, show)
-        image = np.concatenate((dom_color, fd), axis=None)
+        if with_mean_color_attached:
+            mean = mean_color(image)
+            if debug:
+                plot_debug(converted, converter, mean, original, shape, show)
+            image = np.concatenate((mean, fd), axis=None)
+        elif with_dominant_color_attached:
+            dom_color = dominant_color(image, k=2)
+            if debug:
+                plot_debug(converted, converter, dom_color, original, shape, show)
+            image = np.concatenate((dom_color, fd), axis=None)
     elif with_hog_attached:
         fd, show = hog(image, orientations=orientations, pixels_per_cell=pixels_per_cell,
                        cells_per_block=cells_per_block, visualize=True, multichannel=True, block_norm="L2-Hys")
@@ -121,6 +130,10 @@ def pipeline(image, shape: tuple = None, smoothing: float = 0.0, denoising: floa
         image = np.concatenate((image.flatten(), fd), axis=None)
     image = image.flatten()
     return image
+
+
+def mean_color(image):
+    return np.mean(image, axis=(0, 1))
 
 
 def plot_debug(converted, converter, dom_color, original, shape, show):
@@ -147,7 +160,7 @@ def grayscale(image):
     return [rgb2gray(p) for p in image]
 
 
-def dominant_color(image, k=3):
+def dominant_color(image, k=3, nth_color=-1):
     counter = Counter()
     if len(image.shape) == 2:
         image = np.expand_dims(image, axis=2)
@@ -156,7 +169,7 @@ def dominant_color(image, k=3):
         for rgb in row:
             counter[tuple(rgb)] += 1
 
-    return np.asarray(counter.most_common()[-1][0])
+    return np.asarray(counter.most_common()[nth_color][0])
 
 
 def quantize(raster, n_colors):
